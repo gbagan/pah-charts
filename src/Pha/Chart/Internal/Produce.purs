@@ -1,19 +1,19 @@
-module Pha.Charts.Internal.Produce where
+module Pha.Chart.Internal.Produce where
 
 import Prelude
 import Data.Array (catMaybes, concat, head, length, mapWithIndex, reverse)
 import Data.Array.NonEmpty as NEA
 import Data.Int (toNumber)
-import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing, maybe)
 import Pha.Html (Html)
 import Pha.Html as H
-import Pha.Charts.Attributes as CA
-import Pha.Charts.Internal.Coordinates as Coord
-import Pha.Charts.Internal.Property as IP
-import Pha.Charts.Internal.Item as I
-import Pha.Charts.Internal.Many as M
-import Pha.Charts.Internal.Svg as S
-import Pha.Charts.Internal.Helpers (applyFuncs, withSurround, toDefaultColor)
+import Pha.Chart.Attributes as CA
+import Pha.Chart.Internal.Coordinates as Coord
+import Pha.Chart.Internal.Property as IP
+import Pha.Chart.Internal.Item as I
+import Pha.Chart.Internal.Many as M
+import Pha.Chart.Internal.Svg as S
+import Pha.Chart.Internal.Helpers (applyFuncs, withSurround, toDefaultColor)
 
 type Bars d =
   { spacing :: Number
@@ -166,6 +166,104 @@ toBarSeries elIndex barsAttrs properties data_ =
         # (\p -> if p.border == defaultColor then p { border = p.color } else p)
 
 
+{-| -}
+toDotSeries :: forall data_
+              . Int 
+              -> (data_ -> Number) 
+              -> Array (IP.Property data_ String S.Interpolation S.Dot) 
+              -> Array data_ 
+              -> Array (M.Many (I.One data_ S.Dot))
+toDotSeries elIndex toX properties data_ =
+  map IP.toConfigs properties
+    # mapWithIndex (\lineIndex stacks -> mapWithIndex (toSeriesItem lineIndex stacks) stacks)
+    # concat
+    # mapWithIndex (\propIndex f -> f (elIndex + propIndex))
+    # catMaybes
+
+  where
+  toInterConfig attrs = applyFuncs attrs S.defaultInterpolation
+  
+  toDotConfig attrs = applyFuncs attrs S.defaultDot
+
+  toSeriesItem lineIndex stacks stackIndex prop colorIndex =
+        let dotItems = mapWithIndex (toDotItem lineIndex stackIndex colorIndex prop interConfig) data_
+            defaultOpacity = if length stacks > 1 then 0.4 else 0.0
+            interAttr = [ CA.color (toDefaultColor colorIndex), CA.opacity defaultOpacity ] <> prop.inter
+            interConfig = toInterConfig interAttr
+        in do
+        xs <- NEA.fromArray dotItems
+        Just $ I.Rendered
+              { config: { items: xs }
+              , toSvg: \plane _ _ ->
+                  let toBottom datum_ =
+                        (\real visual -> visual - real) <$> prop.value datum_ <*> prop.visual datum_
+                  in
+                  H.g
+                    [ H.class_ "elm-charts__series" ]
+                    [ S.area plane toX (Just toBottom) prop.visual interConfig data_
+                    , S.interpolation plane toX prop.visual interConfig data_
+                    , H.g [ H.class_ "elm-charts__dots" ] (map (I.toSvg plane) dotItems)
+                    ]
+              , toLimits: \c -> Coord.foldPosition I.getLimits (NEA.toArray c.items)
+              , toPosition: \plane c -> Coord.foldPosition (I.getPosition plane) (NEA.toArray c.items)
+              , toHtml: \c -> [ H.table [ H.style "margin" "0" ] (NEA.toArray c.items >>= I.toHtml) ]
+              }
+
+  toDotItem lineIndex stackIndex colorIndex prop interConfig dataIndex datum_ =
+        let defaultAttrs = 
+              [ CA.color interConfig.color
+              , CA.border interConfig.color
+              , if isNothing interConfig.method then CA.circle else identity
+              ]
+            dotAttrs = defaultAttrs <> prop.attrs <> prop.extra lineIndex stackIndex dataIndex prop.meta datum_
+            config = toDotConfig dotAttrs
+            x_ = toX datum_
+            y_ = fromMaybe 0.0 (prop.visual datum_)
+        in
+        I.Rendered
+          { toSvg: \plane _ _ ->
+              case prop.value datum_ of
+                Nothing -> H.empty
+                Just _ -> S.dot plane _.x _.y config { x: x_, y: y_ }
+          , toHtml: \c -> [ tooltipRow c.tooltipInfo.color (toDefaultName colorIndex c.tooltipInfo.name) (prop.format datum_) ]
+          , toLimits: \_ -> { x1: x_, x2: x_, y1: y_, y2: y_ }
+          , toPosition: \plane _ ->
+              let radius = config.shape # maybe 0.0 (S.toRadius config.size)
+                  radiusX_ = Coord.scaleCartesianX plane radius
+                  radiusY_ = Coord.scaleCartesianY plane radius
+              in
+              { x1: x_ - radiusX_
+              , x2: x_ + radiusX_
+              , y1: y_ - radiusY_
+              , y2: y_ + radiusY_
+              }
+          , config:
+              { product: config
+              , values:
+                  { datum: datum_
+                  , x1: x_
+                  , x2: x_
+                  , y: y_
+                  , isReal: isJust (prop.value datum_)
+                  }
+              , tooltipInfo:
+                  { property: lineIndex
+                  , stack: stackIndex
+                  , data: dataIndex
+                  , index: colorIndex
+                  , elIndex: elIndex
+                  , name: prop.meta
+                  , color:
+                      case config.color of
+                        "white" -> interConfig.color
+                        _ -> config.color
+                  , border: config.border
+                  , borderWidth: config.borderWidth
+                  , formatted: prop.format datum_
+                  }
+              , toAny: I.Dot
+              }
+          }
 
 -- RENDER
 

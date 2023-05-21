@@ -1,14 +1,14 @@
-module Pha.Charts.Internal.Many where
+module Pha.Chart.Internal.Many where
 
 import Prelude
 import Data.Array (elem, filter, groupBy, mapMaybe)
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NEA
 import Pha.Html as H
-import Pha.Charts.Internal.Coordinates (Point, Position, Plane)
-import Pha.Charts.Internal.Coordinates as Coord
-import Pha.Charts.Internal.Svg as S
-import Pha.Charts.Internal.Item as I
+import Pha.Chart.Internal.Coordinates (Point, Position, Plane)
+import Pha.Chart.Internal.Coordinates as Coord
+import Pha.Chart.Internal.Svg as S
+import Pha.Chart.Internal.Item as I
 
 type Many x = I.Rendered { items :: NonEmptyArray x }
 

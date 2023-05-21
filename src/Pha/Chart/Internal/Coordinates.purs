@@ -1,4 +1,4 @@
-module Pha.Charts.Internal.Coordinates where
+module Pha.Chart.Internal.Coordinates where
 
 import Prelude
 import Data.Array (foldl, mapMaybe)

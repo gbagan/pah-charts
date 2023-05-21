@@ -1,4 +1,4 @@
-module Pha.Charts.Internal.Svg where
+module Pha.Chart.Internal.Svg where
 
 import Prelude
 
@@ -13,11 +13,11 @@ import Data.String as S
 import Data.String (joinWith, replaceAll)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested (T3, (/\))
-import Pha.Charts.Internal.Commands as C
-import Pha.Charts.Internal.Coordinates (Plane, Point, Position)
-import Pha.Charts.Internal.Coordinates as Coord
-import Pha.Charts.Internal.Helpers as Helpers
-import Pha.Charts.Internal.Interpolation as Interpolation
+import Pha.Chart.Internal.Commands as C
+import Pha.Chart.Internal.Coordinates (Plane, Point, Position)
+import Pha.Chart.Internal.Coordinates as Coord
+import Pha.Chart.Internal.Helpers as Helpers
+import Pha.Chart.Internal.Interpolation as Interpolation
 import Pha.Html (Html)
 import Pha.Html as H
 import Pha.Html.Attributes as P

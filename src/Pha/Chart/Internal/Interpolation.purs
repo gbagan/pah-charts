@@ -1,4 +1,4 @@
-module Pha.Charts.Internal.Interpolation (linear, monotone, stepped) where
+module Pha.Chart.Internal.Interpolation (linear, monotone, stepped) where
 
 import Prelude
 import Data.Array (foldr, head)
@@ -9,9 +9,9 @@ import Data.Number (isNaN)
 import Data.Ord (abs)
 import Data.Tuple (Tuple, snd, uncurry)
 import Data.Tuple.Nested ((/\))
-import Pha.Charts.Internal.Coordinates (Point)
-import Pha.Charts.Internal.Commands (Command(..))
-import Pha.Charts.Internal.Helpers (pairwise)
+import Pha.Chart.Internal.Coordinates (Point)
+import Pha.Chart.Internal.Commands (Command(..))
+import Pha.Chart.Internal.Helpers (pairwise)
 
 
 -- LINEAR INTERPOLATION

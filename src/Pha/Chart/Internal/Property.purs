@@ -1,4 +1,4 @@
-module Pha.Charts.Internal.Property where
+module Pha.Chart.Internal.Property where
 
 import Prelude
 import Data.Array (foldl, reverse)

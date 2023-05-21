@@ -1,12 +1,12 @@
-module Pha.Charts.Internal.Item where
+module Pha.Chart.Internal.Item where
 
 import Prelude
 import Data.Array (mapMaybe)
 import Data.Maybe (Maybe(..))
 import Pha.Html (Html)
 import Pha.Html as H
-import Pha.Charts.Internal.Coordinates (Plane, Position)
-import Pha.Charts.Internal.Svg as S
+import Pha.Chart.Internal.Coordinates (Plane, Position)
+import Pha.Chart.Internal.Svg as S
 
 newtype Rendered a =
   Rendered
@@ -118,6 +118,12 @@ getGeneral (Rendered item) =
 getSize :: forall d. One d S.Dot -> Number
 getSize (Rendered item) = item.config.product.size
 
+isSame :: forall data_ x. One data_ x -> One data_ x -> Boolean
+isSame a b =
+  getPropertyIndex a == getPropertyIndex b &&
+  getStackIndex a == getStackIndex b &&
+  getDataIndex a == getDataIndex b &&
+  getElIndex a == getElIndex b
 
 mapOne :: forall a b x. (a -> b) -> One a x -> One b x
 mapOne func (Rendered item) =

@@ -1,12 +1,12 @@
 -- | SVG path commands.
-module Pha.Charts.Internal.Commands(Command(..), description) where
+module Pha.Chart.Internal.Commands(Command(..), description) where
 
 import Prelude
 import Data.String (joinWith)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
 
-import Pha.Charts.Internal.Coordinates (Plane, toSVGX, toSVGY)
+import Pha.Chart.Internal.Coordinates (Plane, toSVGX, toSVGY)
 
 
 data Command

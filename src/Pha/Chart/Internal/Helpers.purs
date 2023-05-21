@@ -1,4 +1,4 @@
-module Pha.Charts.Internal.Helpers where
+module Pha.Chart.Internal.Helpers where
 
 import Prelude
 import Data.Array ((!!), foldl, groupBy, length, mapWithIndex, tail, zip)

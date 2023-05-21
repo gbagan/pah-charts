@@ -1,14 +1,29 @@
-module Pha.Charts.Svg where
+module Pha.Chart.Svg
+  ( barLegend
+  , legendsAt
+  , line
+  , lineLegend
+  , rect
+  , tick
+  , xTick
+  , yTick
+  , dot
+  , module Exports
+  )
+  where
 
 import Prelude
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Pha.Html (Html)
-import Pha.Charts.Attributes as CA
-import Pha.Charts.Internal.Coordinates (Plane, Point)
-import Pha.Charts.Internal.Helpers (applyFuncs)
-import Pha.Charts.Internal.Svg (Bar, Dot, Interpolation, Legend, Legends, Line, Rect, Tick)
-import Pha.Charts.Internal.Svg as IS
+import Pha.Chart.Attributes as CA
+import Pha.Chart.Internal.Coordinates (Plane, Point)
+import Pha.Chart.Internal.Helpers (applyFuncs)
+import Pha.Chart.Internal.Svg (Bar, Dot, Interpolation, Legend, Legends, Line, Rect, Tick)
+import Pha.Chart.Internal.Svg as IS
+
+import Pha.Chart.Internal.Svg (Bar, Dot, Interpolation, Legend, Legends, Line, Rect, Tick) as Exports
+
 
 xTick :: forall msg. Plane -> Array (CA.Attribute Tick) -> Point -> Html msg
 xTick plane edits =
@@ -60,3 +75,10 @@ lineLegend edits interAttrsOrg dotAttrsOrg =
       _, _             -> dotAttrsOrg /\ ([CA.opacity 0.0] <> interAttrsOrg) /\ edits
 
   -- adjustWidth config = config {width = 10.0}
+
+-- DOTS
+
+dot :: forall data_ msg. Plane -> (data_ -> Number) -> (data_ -> Number) -> Array (CA.Attribute Dot) -> data_ -> Html msg
+dot plane toX toY edits =
+  IS.dot plane toX toY (applyFuncs edits IS.defaultDot)
+
