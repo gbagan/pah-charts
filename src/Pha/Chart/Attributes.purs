@@ -54,6 +54,33 @@ zoom per axis = axis { min = axis.min + off, max = axis.max - off }
   zoomedFull = full / (max 1.0 per / 100.0)
   off = (full - zoomedFull) / 2.0
 
+move :: Number -> Attribute C.Axis
+move v axis = axis { min = axis.min + v, max = axis.max + v }
+
+-- | Add padding (in px) to range/domain.
+
+pad :: Number -> Number -> Attribute C.Axis
+pad minPad maxPad axis =
+  let scale = C.scaleCartesian axis in
+  axis { min = axis.min - scale minPad, max = axis.max + scale maxPad }
+
+
+-- | Center range/domain at certain point.
+centerAt :: Number -> Attribute C.Axis
+centerAt v axis =
+  let full = axis.max - axis.min in
+  axis { min = v - full / 2.0, max = v + full / 2.0 }
+
+
+-- | Given an axis, find the value within it closest to zero.
+zero :: C.Axis -> Number
+zero b = clamp b.min b.max 0.0
+
+
+-- | Get the middle value of your axis.
+middle :: C.Axis -> Number
+middle b = b.min + (b.max - b.min) / 2.0
+
 
 
 
@@ -82,6 +109,14 @@ y2 v = _ { y2 = Just v }
 y2Svg :: forall x r. x -> Attribute { y2Svg :: Maybe x | r }
 y2Svg v  = _ { y2Svg = Just v }
 
+-- GRID
+
+noGrid :: forall r. Attribute { grid :: Boolean | r }
+noGrid = _ { grid = false }
+
+withGrid :: forall r. Attribute { grid :: Boolean | r }
+withGrid = _ { grid = true }
+
 
 
 
@@ -100,10 +135,21 @@ roundBottom v = _ { roundBottom = v }
 width :: forall r. Number -> Attribute { width :: Number | r }
 width v = _ { width = v }
 
+
+height :: forall r. Number -> Attribute { height :: Number | r }
+height v = _ { height = v }
+
 -- DECORATION
 
 opacity :: forall r. Number -> Attribute { opacity :: Number | r }
 opacity v = _ { opacity = v }
+
+dotted :: forall r
+            . Array (Attribute CS.Pattern) 
+            -> Attribute { design :: Maybe CS.Design, opacity :: Number | r }
+dotted attrs_ config =
+  config { design = Just (CS.Dotted attrs_), opacity = if config.opacity == 0.0 then 1.0 else config.opacity }
+
 
 
 -- LINES

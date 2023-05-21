@@ -2,6 +2,7 @@ module Pha.Chart where
 
 import Prelude
 import Data.Array (any, elem, foldl, length, mapMaybe, snoc)
+import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple, fst)
 import Data.Tuple.Nested ((/\))
@@ -230,7 +231,7 @@ definePlane config elements =
 
 
 getItems :: forall data_ msg. C.Plane -> Array (Element data_ msg) -> Array (CI.One data_ CI.Any)
-getItems plane elements =
+getItems _ elements =
   foldl toItems [] elements
   where
   toItems acc el =
@@ -239,7 +240,7 @@ getItems plane elements =
           SeriesElement _ items _ _ -> acc <> items
           BarsElement _ items _ _ _ -> acc <> items
           CustomElement item _ -> acc <> [ item ]
-          AxisElement func _ -> acc
+          AxisElement _ _ -> acc
           TicksElement _ _ -> acc
           TickElement _ _ _ -> acc
           LabelsElement _ _ _ -> acc
@@ -307,7 +308,7 @@ viewElements :: forall data_ msg
                 -> Array Legend.Legend 
                 -> Array (Element data_ msg) 
                 -> { before :: Array (Html msg), chart :: Array (Html msg), after :: Array (Html msg) }
-viewElements config plane tickValues allItems allLegends elements =
+viewElements _ plane tickValues allItems allLegends elements =
   foldl viewOne {before: [], chart: [], after: []} elements
   where
   viewOne {before, chart: chart_, after} el =
@@ -352,10 +353,122 @@ type Labels =
   , ellipsis :: Maybe { width :: Number, height :: Number }
   }
 
+xLabels :: forall item msg. Array (Attribute Labels) -> Element item msg
+xLabels edits =
+  LabelsElement toConfig toTickValues \p config ->
+    let default = IS.defaultLabel
+        toLabel item =
+          IS.label p
+            default
+            { xOff = config.xOff
+            , yOff = if config.flip then -config.yOff + 10.0 else config.yOff
+            , color = config.color
+            , anchor = config.anchor
+            , fontSize = config.fontSize
+            , uppercase = config.uppercase
+            , rotate = config.rotate
+            , attrs = config.attrs
+            , hideOverflow = config.hideOverflow
+            , ellipsis = config.ellipsis
+            }
+            [ H.text item.label ]
+            { x: item.value
+            , y: config.pinned p.y
+            }
+    in H.g [ H.class_ "elm-charts__x-labels" ] (toLabel <$> toTicks p config)
+  where
+  toConfig _ =
+        Helpers.applyFuncs edits
+          { color: "#808BAB"
+          , limits: []
+          , pinned: CA.zero
+          , amount: 5
+          , generate: IS.Numbers
+          , flip: false
+          , anchor: Nothing
+          , xOff: 0.0
+          , yOff: 18.0
+          , grid: false
+          , format: Nothing
+          , uppercase: false
+          , rotate: 0.0
+          , fontSize: Nothing
+          , attrs: []
+          , hideOverflow: false
+          , ellipsis: Nothing
+          }
 
+  toTicks p config =
+    foldl (#) p.x config.limits
+        # generateValues config.amount config.generate config.format
 
+  toTickValues p config ts =
+    if not config.grid then
+      ts
+    else
+      ts { xs = ts.xs <> map _.value (toTicks p config) }
 
+{-| Produce a set of labels at "nice" numbers on the y-axis of your chart.
+The styling options are the same as for `xLabels`.
+-}
+yLabels :: forall item msg. Array (Attribute Labels) -> Element item msg
+yLabels edits =
+  LabelsElement toConfig toTickValues \p config ->
+    let default = IS.defaultLabel
+        toLabel item =
+          IS.label p
+            default
+            { xOff = if config.flip then -config.xOff else config.xOff
+            , yOff = config.yOff
+            , color = config.color
+            , fontSize = config.fontSize
+            , uppercase = config.uppercase
+            , rotate = config.rotate
+            , attrs = config.attrs
+            , ellipsis = config.ellipsis
+            , hideOverflow = config.hideOverflow
+            , anchor =
+                case config.anchor of
+                  Nothing -> Just (if config.flip then IS.Start else IS.End)
+                  Just anchor -> Just anchor
+            }
+            [ H.text item.label ]
+            { x: config.pinned p.x
+            , y: item.value
+            }
+    in
+    H.g [ H.class_ "elm-charts__y-labels" ] (map toLabel (toTicks p config))
+  where
+  toConfig _ =
+        Helpers.applyFuncs edits
+          { color: "#808BAB"
+          , limits: []
+          , pinned: CA.zero
+          , amount: 5
+          , generate: IS.Numbers
+          , anchor: Nothing
+          , flip: false
+          , xOff: -10.0
+          , yOff: 3.0
+          , grid: false
+          , format: Nothing
+          , uppercase: false
+          , fontSize: Nothing
+          , rotate: 0.0
+          , attrs: []
+          , hideOverflow: false
+          , ellipsis: Nothing
+          }
 
+  toTicks p config =
+    foldl (#) p.y config.limits
+    # generateValues config.amount config.generate config.format
+
+  toTickValues p config ts =
+    if not config.grid then
+      ts
+    else
+      ts { ys = ts.ys <> map _.value (toTicks p config) }
 
 
 type Label =
@@ -435,3 +548,103 @@ grid edits =
       Nothing
     else
       Just $ CS.dot p _.x _.y [ CA.color color, CA.size width, CA.circle ] { x, y }
+
+interpolated :: forall data_
+                . (data_ -> Number) 
+                -> Array (Attribute CS.Interpolation) 
+                -> Array (Attribute CS.Dot) 
+                -> Property data_ CS.Interpolation CS.Dot
+interpolated y inter = IP.property (y >>> Just) ([ CA.linear ] <> inter)
+
+interpolatedMaybe :: forall data_
+                    . (data_ -> Maybe Number) 
+                    -> Array (Attribute CS.Interpolation) 
+                    -> Array (Attribute CS.Dot) 
+                    -> Property data_ CS.Interpolation CS.Dot
+interpolatedMaybe y inter = IP.property y ([ CA.linear ] <> inter)
+
+amongst :: forall data_ deco inter x.
+            Eq data_
+            => Array (CI.One data_ x) 
+            -> (data_ -> Array (Attribute deco)) 
+            -> Property data_ inter deco 
+            -> Property data_ inter deco
+amongst inQuestion func =
+  IP.variation \p s i _ d ->
+    let check product =
+          if Item.getPropertyIndex product == p &&
+             Item.getStackIndex product == s &&
+             Item.getDataIndex product == i &&
+             Item.getDatum product == d
+          then func d else []
+    in
+    inQuestion >>= check
+
+
+stacked :: forall data_ inter deco. Array (Property data_ inter deco) -> Property data_ inter deco
+stacked = IP.stacked
+
+type Property data_ inter deco = IP.Property data_ String inter deco
+
+
+-- SERIES
+
+series :: forall data_ msg
+            . (data_ -> Number) 
+            -> Array (Property data_ CS.Interpolation CS.Dot) 
+            -> Array data_
+            -> Element data_ msg
+series toX properties data_ = seriesMap identity toX properties data_
+
+seriesMap :: forall a data_ msg
+               . (data_ -> a) 
+               -> (data_ -> Number) 
+               -> Array (Property data_ CS.Interpolation CS.Dot) 
+               -> Array data_
+               -> Element a msg
+seriesMap mapData toX properties data_ =
+  Indexed $ \index ->
+    let
+      items = Produce.toDotSeries index toX properties data_
+
+      generalized = items >>= Many.getGenerals <#> Item.mapOne mapData
+
+      legends_ = Legend.toDotLegends index properties
+
+      toLimits = map Item.getLimits items
+    in
+    ( SeriesElement toLimits generalized legends_ $ \p ->
+        H.g [ H.class_ "elm-charts__dot-series" ] (Item.toSvg p <$> items)
+          # map absurd
+    ) /\ (index + length (properties >>= IP.toConfigs))
+
+
+-- HELPERS
+
+type TickValue =
+  { value :: Number
+  , label :: String
+  }
+
+
+generateValues :: Int -> IS.TickType -> Maybe (Number -> String) -> C.Axis -> Array TickValue
+generateValues amount tick maybeFormat axis =
+  case tick of
+    IS.Numbers -> toTickValues identity show (IS.generate amount IS.numbers axis)
+    IS.Ints -> toTickValues toNumber show (IS.generate amount IS.ints axis)
+    {-
+    IS.Times zone ->
+      toTickValues (toFloat << Time.posixToMillis << .timestamp) (CS.formatTime zone)
+        (CS.generate amount (CS.times zone) axis)
+    -}
+  where
+  toTickValues :: forall a. (a -> Number) -> (a -> String) -> Array a -> Array TickValue
+  toTickValues toValue toString =
+    map \i ->
+      { value: toValue i
+      , label:
+          case maybeFormat of
+            Just formatter -> formatter (toValue i)
+            Nothing -> toString i
+      }
+

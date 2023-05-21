@@ -13,6 +13,7 @@ import Data.String as S
 import Data.String (joinWith, replaceAll)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested (T3, (/\))
+import Pha.Chart.Internal.Intervals as I 
 import Pha.Chart.Internal.Commands as C
 import Pha.Chart.Internal.Coordinates (Plane, Point, Position)
 import Pha.Chart.Internal.Coordinates as Coord
@@ -1459,6 +1460,30 @@ toPattern defaultColor design =
                     (mapWithIndex toStop colors)
                 ]
             ) /\ theId
+
+-- INTERVALS
+
+
+newtype Generator a
+  = Generator (Int -> Coord.Axis -> Array a)
+
+
+numbers :: Generator Number
+numbers = Generator $ \i b -> I.floats (I.around i) { min: b.min, max: b.max }
+
+
+ints :: Generator Int
+ints = Generator $ \i b -> I.ints (I.around i) { min: b.min, max: b.max }
+
+{-
+times : Time.Zone -> Generator I.Time
+times zone =
+  Generator (\i b -> I.times zone i { min = b.min, max = b.max })
+-}
+
+generate :: forall a. Int -> Generator a -> Coord.Axis -> Array a
+generate amount (Generator func) limits = func amount limits
+
 
 
 

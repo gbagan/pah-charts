@@ -1,9 +1,11 @@
 {
-  "scripts": {
-    "build": "spago build"
-  },
   "dependencies": {
     "purescript": "^0.15.9",
     "spago": "^0.21.0"
+  },
+  "scripts": {
+    "clean": "rimraf output && rimraf .spago",
+    "build": "spago build --purs-args '--censor-lib --strict'",
+    "example": "spago -x test.dhall bundle-app  -m Test.Main --to dist/bundle.js"
   }
 }
