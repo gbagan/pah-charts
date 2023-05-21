@@ -2,7 +2,10 @@
 , dependencies =
   [ "arrays"
   , "foldable-traversable"
+  , "integers"
+  , "lists"
   , "maybe"
+  , "numbers"
   , "ordered-collections"
   , "pha"
   , "prelude"

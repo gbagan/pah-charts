@@ -6,6 +6,8 @@ import Data.Array.NonEmpty as NEA
 import Data.Maybe (Maybe, fromMaybe, maybe)
 import Data.Tuple (Tuple(..))
 
+type Attribute c = c -> c
+
 applyFuncs :: forall a. Array (a -> a) -> a -> a
 applyFuncs funcs default = foldl (#) default funcs
 
@@ -13,8 +15,8 @@ applyFuncs funcs default = foldl (#) default funcs
 withSurround :: forall a b. (Int -> Maybe a -> a -> Maybe a -> b) -> Array a -> Array b
 withSurround func xs = xs # mapWithIndex \i x -> func i (xs !! (i - 1)) x (xs !! (i + 1))
 
-gatherWith :: forall a. (a -> a -> Boolean) -> Array a -> Array (Tuple a (Array a))
-gatherWith testFn = groupBy testFn >>> map \ys -> Tuple (NEA.head ys) (NEA.toArray ys)
+--gatherWith :: forall a. (a -> a -> Boolean) -> Array a -> Array (NEA.NonEmptyArray a)
+--gatherWith testFn = groupBy testFn
 
 pairwise ∷ ∀ a. Array a → Array (Tuple a a)
 pairwise list = maybe [] (zip list) (tail list)
@@ -64,12 +66,10 @@ darkBlue :: String
 darkBlue = "#7345f6"
 
 coral :: String
-coral =
-  "#ea7369"
+coral = "#ea7369"
 
 magenta :: String
-magenta =
-  "#db4cb2"
+magenta = "#db4cb2"
 
 brown :: String
 brown = "#871c1c"

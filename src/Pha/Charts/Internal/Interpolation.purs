@@ -9,14 +9,9 @@ import Data.Number (isNaN)
 import Data.Ord (abs)
 import Data.Tuple (Tuple, snd, uncurry)
 import Data.Tuple.Nested ((/\))
+import Pha.Charts.Internal.Coordinates (Point)
 import Pha.Charts.Internal.Commands (Command(..))
 import Pha.Charts.Internal.Helpers (pairwise)
-
-type Point =
-  { x :: Number
-  , y :: Number
-  }
-
 
 
 -- LINEAR INTERPOLATION
